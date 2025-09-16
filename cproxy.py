@@ -1,5 +1,3 @@
-#! /home/erik/projects/check-proxies/.venv/bin/python
-
 
 '''
     This program is designed to check your proxy list and output results.
@@ -31,7 +29,8 @@ LOG_LEVEL = logging.ERROR
 HELP :str = '''Usage: cproxy.py <proxy_list>    Filter proxies that actually work
 <proxy_list> -   Path to the file containing proxies
 
-NOTE: The proxy file should contain a proxy perline in the form: scheme://ip:port.
+NOTE: The proxy file should contain a proxy perline in the form:
+    scheme://ip:port. scheme can be anything e.g. (socks5, http, https
 '''
 
 VALID_PROXIES :set = set()
@@ -114,7 +113,7 @@ def main() -> None:
     for t in threads:
         t.join()
     
-    with open(OUTFILE, 'w') as filestream:
+    with open(OUTFILE, 'a') as filestream:
         filestream.write('\n'.join(VALID_PROXIES))
         filestream.write('\n')
 
