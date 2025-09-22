@@ -54,6 +54,8 @@ def read_proxies() -> None:
         with open(FILENAME, 'r') as file_stream:
             for line in file_stream:
                 current_proxy = line.strip()
+                if not current_proxy.startswith(("socks", "http")):
+                    raise Exception("scheme not recognized!")
 
                 if current_proxy: # ignore empty lines
                     logging.debug(f"Adding proxy to the queue: {current_proxy}")
