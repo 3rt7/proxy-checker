@@ -1,3 +1,4 @@
+#!/Users/erik/projects/check-proxies/.venv/bin/python
 
 '''
     This program is designed to check your proxy list and output results.
@@ -21,7 +22,7 @@ import sys
 OUTFILE = "valid-proxies.txt"
 SITE :str = "https://check-host.net/"
 FILENAME :str = ""
-THREAD_COUNT = 10 # number of threads to use
+THREAD_COUNT = 8 # number of threads to use
 LOG_LEVEL = logging.ERROR
 #===================================
 
@@ -36,6 +37,7 @@ NOTE: The proxy file should contain a proxy perline in the form:
 VALID_PROXIES :set = set()
 LOCK = threading.Lock()
 PROXY_QUEUE = queue.Queue()
+STOPEVENT = threading.Event()
 
 
 logging.basicConfig(
@@ -65,7 +67,7 @@ def read_proxies() -> None:
 
 def check_proxy() -> None:
     global PROXY_QUEUE
-    while not PROXY_QUEUE.empty():
+    while not (PROXY_QUEUE.empty() or STOPEVENT.is_set()):
         logging.debug("Reading proxy from queue")
         proxy = PROXY_QUEUE.get()
 
@@ -85,6 +87,13 @@ def check_proxy() -> None:
             print(proxy)
             with LOCK:
                 VALID_PROXIES.add(proxy)
+
+def onquit() -> None:
+    # it overrides any existing file
+    with open(OUTFILE, 'w') as filestream:
+        filestream.write('\n'.join(VALID_PROXIES))
+        filestream.write('\n')
+
 
 def main() -> None:
     global FILENAME
@@ -110,12 +119,19 @@ def main() -> None:
         t.start()
         threads.append(t)
 
-    for t in threads:
-        t.join()
+    try:
+        for t in threads:
+            t.join()
+    except KeyboardInterrupt:
+        print("=====program interrupted. writing the results...======")
+        STOPEVENT.set()
+        for t in threads:
+            t.join()
+        onquit()
+        exit()
     
-    with open(OUTFILE, 'a') as filestream:
-        filestream.write('\n'.join(VALID_PROXIES))
-        filestream.write('\n')
+    # write results and quit
+    onquit()
 
 if __name__ == '__main__':
     main()
